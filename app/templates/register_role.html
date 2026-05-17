@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Votix — Ajouter un rôle{% endblock %}
+{% block content %}
+
+<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;">
+    <div style="width:100%;max-width:460px;">
+
+        <div style="text-align:center;margin-bottom:1.75rem;">
+            <div style="width:3rem;height:3rem;background:#e0f2fe;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:.75rem;">
+                <i class="bi bi-briefcase-fill" style="font-size:1.4rem;color:#0369a1;"></i>
+            </div>
+            <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 .25rem;">Ajouter un rôle</h1>
+            <p style="color:var(--text-muted);font-size:.9rem;margin:0;">Déclarez un poste du bureau à pourvoir.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="bi bi-{% if category == 'danger' %}x-circle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-icon" style="background:#e0f2fe;color:#0369a1;">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+                <span class="card-title">Informations du rôle</span>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('votix.register_role') }}">
+                    <div class="mb-form">
+                        <label for="name" class="form-label">Nom du poste</label>
+                        <input type="text" id="name" name="name" class="form-control"
+                               placeholder="Ex : Président, Trésorier…" required autocomplete="off">
+                    </div>
+                    <div class="mb-form">
+                        <label for="display_order" class="form-label">
+                            Ordre d'affichage
+                            <span style="color:var(--text-muted);font-weight:400;">(optionnel)</span>
+                        </label>
+                        <input type="number" id="display_order" name="display_order" class="form-control"
+                               placeholder="0" value="0" min="0">
+                        <span class="form-text">Les rôles sont triés par ordre croissant sur la page de vote.</span>
+                    </div>
+                    <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+                        <a href="{{ url_for('votix.roles') }}" class="btn btn-secondary" style="flex:1;text-align:center;">
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary" style="flex:2;">
+                            <i class="bi bi-plus-circle"></i>
+                            Enregistrer le rôle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

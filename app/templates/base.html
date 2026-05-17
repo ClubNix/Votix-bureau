@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/import.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <title>{% block title %}Votix{% endblock %}</title>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <img src="{{ url_for('static', filename='images/votix.png') }}" alt="Logo"/>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-label="Menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbar">
+            <ul class="navbar-nav ms-auto mb-2 mb-md-0 align-items-md-center" style="gap:.25rem">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('main.index') }}">
+                        <i class="bi bi-house-door"></i> Accueil
+                    </a>
+                </li>
+                {% if current_user.is_authenticated and current_user.role in ('admin', 'technician') %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('configure.configure') }}">
+                        <i class="bi bi-gear"></i> Configuration
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('admin.users') }}">
+                        <i class="bi bi-people"></i> Utilisateurs
+                    </a>
+                </li>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.role in ('admin', 'technician') %}
+                <li class="nav-item d-flex align-items-center" style="padding:0 .25rem;">
+                    {% if is_armed %}
+                    <span style="font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:99px;background:#d1fae5;color:#065f46;display:inline-flex;align-items:center;gap:.3rem;">
+                        <i class="bi bi-shield-check"></i> ARMÉ
+                    </span>
+                    {% elif current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin.arm') }}" style="font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:99px;background:#fef2f2;color:#b91c1c;display:inline-flex;align-items:center;gap:.3rem;">
+                        <i class="bi bi-shield-exclamation"></i> NON ARMÉ
+                    </a>
+                    {% else %}
+                    <span style="font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:99px;background:#fef2f2;color:#b91c1c;display:inline-flex;align-items:center;gap:.3rem;">
+                        <i class="bi bi-shield-exclamation"></i> NON ARMÉ
+                    </span>
+                    {% endif %}
+                </li>
+                {% endif %}
+                {% if not current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link nav-cta" href="{{ url_for('auth.login') }}">
+                        <i class="bi bi-box-arrow-in-right"></i> Connexion
+                    </a>
+                </li>
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link nav-cta-outline" href="{{ url_for('auth.logout') }}">
+                        <i class="bi bi-box-arrow-left"></i> Déconnexion
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div id="page-bg"></div>
+
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-inner">
+            <span><i class="bi bi-clock me-1"></i><span id="current-time"></span></span>
+            <span>&copy; Club*Nix &mdash; Louis GAMBART &mdash; <span id="year"></span></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+    document.getElementById('current-time').textContent = new Date().toLocaleString('fr-FR');
+    document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

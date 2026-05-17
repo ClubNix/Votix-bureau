@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Votix — Voter{% endblock %}
+{% block content %}
+
+<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;">
+    <div style="width:100%;max-width:560px;">
+
+        <div style="text-align:center;margin-bottom:1.75rem;">
+            <div style="width:3rem;height:3rem;background:var(--primary-light);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:.75rem;">
+                <i class="bi bi-check2-square" style="font-size:1.4rem;color:var(--primary);"></i>
+            </div>
+            <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 .25rem;">Voter</h1>
+            <p style="color:var(--text-muted);font-size:.9rem;margin:0;">Votre vote est chiffré et anonyme.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="bi bi-{% if category == 'danger' %}x-circle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if not role_data %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+            Aucun poste avec des candidats n'est configuré. Contactez l'administrateur.
+        </div>
+        {% else %}
+
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-icon" style="background:#fef9c3;color:#854d0e;">
+                    <i class="bi bi-key-fill"></i>
+                </div>
+                <span class="card-title">Bulletin de vote</span>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('votix.vote', link_string=voter.link_string) }}" id="vote-form">
+
+                    <div class="mb-form">
+                        <label for="secret" class="form-label">
+                            <i class="bi bi-lock me-1"></i>Code secret
+                        </label>
+                        <input type="text" id="secret" name="secret" class="form-control"
+                               placeholder="0000" required autocomplete="off"
+                               inputmode="numeric" pattern="[0-9]{4}" maxlength="4">
+                        <span class="form-text">Ce code vous a été envoyé par email.</span>
+                    </div>
+
+                    {% for role_entry in role_data %}
+                    <hr class="section-divider">
+
+                    <div class="mb-form">
+                        <label class="form-label" style="font-size:1rem;font-weight:700;">
+                            <i class="bi bi-briefcase me-1" style="color:#0369a1;"></i>
+                            {{ role_entry.name }}
+                        </label>
+                        <p style="font-size:.8rem;color:var(--text-muted);margin:.1rem 0 .75rem;">
+                            Choisissez un candidat pour ce poste.
+                        </p>
+
+                        {% for candidate in role_entry.candidates %}
+                        <div style="position:relative;">
+                            <input type="radio"
+                                   class="candidate-radio"
+                                   id="role{{ role_entry.id }}_c{{ candidate[0] }}"
+                                   name="role_{{ role_entry.id }}"
+                                   value="{{ candidate[0] }}"
+                                   {% if loop.first %}required{% endif %}>
+                            <label class="candidate-label" for="role{{ role_entry.id }}_c{{ candidate[0] }}">
+                                {% if candidate|length > 3 and candidate[3] %}
+                                <img src="{{ url_for('static', filename='uploads/' + candidate[3]) }}"
+                                     alt="Logo {{ candidate[1] }}"
+                                     class="candidate-avatar"
+                                     style="object-fit:cover;background:#f9fafb;border-radius:50%;">
+                                {% else %}
+                                <div class="candidate-avatar">{{ candidate[1][0] | upper }}</div>
+                                {% endif %}
+                                <span class="candidate-name">{{ candidate[1] }}</span>
+                                <i class="bi bi-check-circle-fill candidate-check"></i>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <hr class="section-divider">
+
+                    <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
+                        <i class="bi bi-send-check"></i>
+                        Soumettre mon vote
+                    </button>
+
+                    <p style="text-align:center;font-size:.78rem;color:var(--text-muted);margin-top:.9rem;margin-bottom:0;">
+                        <i class="bi bi-shield-check me-1"></i>
+                        Votre vote est chiffré par RSA. Il ne peut pas être lié à votre identité.
+                    </p>
+
+                </form>
+            </div>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+.candidate-radio:checked + .candidate-label {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+.candidate-radio:checked + .candidate-label .candidate-check {
+    opacity: 1;
+}
+</style>
+
+<script>
+// Client-side: ensure every role has a selection before submit
+document.getElementById('vote-form')?.addEventListener('submit', function(e) {
+    const roles = {{ role_data | map(attribute='id') | list | tojson }};
+    for (const rid of roles) {
+        if (!this.querySelector(`input[name="role_${rid}"]:checked`)) {
+            e.preventDefault();
+            const label = this.querySelector(`input[name="role_${rid}"]`)
+                ?.closest('.mb-form')?.querySelector('.form-label')?.textContent?.trim() || `rôle #${rid}`;
+            alert(`Veuillez choisir un candidat pour : ${label}`);
+            return;
+        }
+    }
+});
+</script>
+
+{% endblock %}
