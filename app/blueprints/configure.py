@@ -3,6 +3,7 @@ from flask_login import login_required
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import set_key, dotenv_values
+from sqlalchemy import or_
 
 from .auth import admin_required
 from .mail_sender import send_invitation_email, send_link_email, send_reminder_email, send_admin_test_email
@@ -153,7 +154,14 @@ def configure():
 def _bulk_send(app, send_fn, filter_kwargs: dict, label: str):
     """Run bulk email sending in a background thread with its own app context."""
     with app.app_context():
-        voters = Voter.query.filter_by(**filter_kwargs).all()
+        # Treat NULL the same as False for boolean status columns (rows imported via raw SQL
+        # may have NULL instead of 0 when the fields were not explicitly set at insert time).
+        conditions = [
+            or_(getattr(Voter, col) == val, getattr(Voter, col).is_(None)) if val is False
+            else getattr(Voter, col) == val
+            for col, val in filter_kwargs.items()
+        ]
+        voters = Voter.query.filter(*conditions).all()
         count, errors = 0, 0
         for voter in voters:
             try:

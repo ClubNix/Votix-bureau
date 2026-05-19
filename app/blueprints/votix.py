@@ -120,7 +120,8 @@ def import_voters():
                             secret = str(random.randint(0, 9999)).zfill(4)
                             db.add_voter(Voter(
                                 last_name=last_name, first_name=first_name, email=email, promotion=promotion,
-                                link_string=link_string, secret=secret)
+                                link_string=link_string, secret=secret,
+                                voted=False, invitation_sent=False, link_sent=False)
                             )
                             imported += 1
             except Exception as e:
