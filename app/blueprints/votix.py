@@ -102,6 +102,8 @@ def import_voters():
             try:
                 filepath = os.path.join(current_app.config['FILE_UPLOADS'], f'{uuid.uuid4()}.csv')
                 file.save(filepath)
+                imported = 0
+                skipped = 0
                 with DatabaseHandler('app/var/db.sqlite') as db:
                     with open(filepath, 'r') as f:
                         reader = csv.reader(f)
@@ -109,19 +111,28 @@ def import_voters():
                         for row in reader:
                             last_name, first_name, email, promotion = row
 
+                            if db.get_voter_by_email(email):
+                                votix_logger.warning(f"Duplicate voter skipped during import: {email}")
+                                skipped += 1
+                                continue
+
                             link_string = str(uuid.uuid4())
                             secret = str(random.randint(0, 9999)).zfill(4)
                             db.add_voter(Voter(
                                 last_name=last_name, first_name=first_name, email=email, promotion=promotion,
                                 link_string=link_string, secret=secret)
                             )
+                            imported += 1
             except Exception as e:
                 flash('Une erreur est survenue lors de l\'importation des électeurs.', 'danger')
                 votix_logger.error(f"An error occurred while importing voters: {e}")
                 return render_template('import_voters.html', list=promotion_list)
 
-            votix_logger.info('Voters imported successfully via {file.filename}')
-            flash('Électeurs importés avec succès.', 'success')
+            votix_logger.info(f'Voters imported: {imported} created, {skipped} skipped (duplicates)')
+            if skipped > 0:
+                flash(f'{imported} électeur(s) importé(s) avec succès. {skipped} électeur(s) ignoré(s) (déjà existants).', 'warning')
+            else:
+                flash(f'Électeurs importés avec succès.', 'success')
             return render_template('import_voters.html', list=promotion_list)
     else:
         return render_template('import_voters.html', list=promotion_list)
@@ -159,6 +170,23 @@ def send_voter_link(voter_id):
         flash(f'Lien de vote envoyé à {voter.email}.', 'success')
     except Exception as e:
         flash(f'Erreur lors de l\'envoi à {voter.email} : {e}', 'danger')
+    return redirect(url_for('votix.voters_list'))
+
+
+@votix.route('/voters/<int:voter_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_voter(voter_id):
+    from ..models import Voter as VoterModel
+    voter = VoterModel.query.get_or_404(voter_id)
+    try:
+        with DatabaseHandler('app/var/db.sqlite') as db:
+            db.delete_voter(voter_id)
+        votix_logger.info(f"Voter {voter_id} ({voter.email}) deleted by admin")
+        flash(f'Électeur {voter.last_name} {voter.first_name} supprimé.', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de la suppression : {e}', 'danger')
+        votix_logger.error(f"Error deleting voter {voter_id}: {e}")
     return redirect(url_for('votix.voters_list'))
 
 

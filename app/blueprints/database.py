@@ -57,6 +57,11 @@ class DatabaseHandler:
         database_logger.info(f"Added voter {voter.email}")
         self.conn.commit()
 
+    def delete_voter(self, voter_id: int):
+        self.cursor.execute('DELETE FROM voters WHERE id = ?', (voter_id,))
+        self.conn.commit()
+        database_logger.info(f"Deleted voter {voter_id}")
+
     def get_roles(self):
         self.cursor.execute('SELECT * FROM roles ORDER BY display_order, name')
         return self.cursor.fetchall()
