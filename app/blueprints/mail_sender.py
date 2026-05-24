@@ -1,6 +1,7 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+from email.utils import formatdate, make_msgid
 from dotenv import load_dotenv, dotenv_values
 from email_validator import validate_email, EmailNotValidError
 from jinja2 import Environment, FileSystemLoader
@@ -83,7 +84,7 @@ def send_email(subject: str, body: str, recipient: str, mime: str = 'html'):
 
     if mime == 'html':
         # Wrap in multipart/related so we can embed the logo as a CID inline image
-        msg = MIMEMultipart('related')
+        msg = MIMEMultipart('mixed')
         msg.attach(MIMEText(body, 'html'))
         try:
             with open(LOGO_PATH, 'rb') as f:
@@ -101,6 +102,17 @@ def send_email(subject: str, body: str, recipient: str, mime: str = 'html'):
     msg['Reply-To'] = smtp_reply_to
     msg['To']       = recipient
     msg['Subject']  = subject
+    msg['Date'] = formatdate(localtime=True)
+    msg['Message-ID'] = make_msgid(domain=smtp_from.split("@")[1])
+
+    alt = MIMEMultipart('alternative')
+
+    text_body = "Veuillez consulter ce mail en HTML."
+
+    alt.attach(MIMEText(text_body, 'plain'))
+    alt.attach(MIMEText(body, 'html'))
+
+    msg.attach(alt)
 
     try:
         with smtplib.SMTP_SSL(smtp_server, int(smtp_port), context=ctx) as server:
@@ -109,7 +121,6 @@ def send_email(subject: str, body: str, recipient: str, mime: str = 'html'):
     except smtplib.SMTPException as e:
         email_logger.error(e)
         raise
-
 
 def send_invitation_email(voter: Voter):
     cfg = dotenv_values(DOTENV_PATH)
